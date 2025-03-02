@@ -95,10 +95,11 @@
             const savedTheme = getCookie('theme');
             if (savedTheme) {
                 document.body.classList.toggle('light-mode', savedTheme === 'light');
-            } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
-                document.body.classList.add('light-mode');
-                setCookie('theme', 'light', 365);
+            } else {
+                document.body.classList.remove('light-mode');
+                setCookie('theme', 'dark', 365);
             }
+            loadDefaultArchive();
         };
 
         async function loadArchive() {
@@ -109,7 +110,14 @@
                 alert("Please enter a website and select a date.");
                 return;
             }
-            
+            loadSite(website, date);
+        }
+
+        async function loadDefaultArchive() {
+            loadSite('youtube.com', '20180329');
+        }
+
+        async function loadSite(website, date) {
             let timestamp = date + "000000";
             let checkUrl = `https://archive.org/wayback/available?url=http://${website}&timestamp=${timestamp}`;
             
@@ -120,7 +128,6 @@
                     alert("Website capture does not exist!");
                     return;
                 }
-                
                 let archiveUrl = data.archived_snapshots.closest.url;
                 document.getElementById("archiveFrame").src = archiveUrl;
             } catch (error) {
@@ -138,14 +145,21 @@
         }
 
         function takeScreenshot() {
-            const iframe = document.getElementById('archiveFrame');
-            html2canvas(iframe.contentWindow.document.body).then(canvas => {
+            const canvas = document.createElement('canvas');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = getComputedStyle(document.body).backgroundColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            html2canvas(document.body).then(canvas => {
                 const link = document.createElement('a');
-                link.download = 'website_screenshot.png';
+                link.download = 'device_screenshot.png';
                 link.href = canvas.toDataURL();
                 link.click();
             }).catch(() => {
-                alert("Screenshots may not work properly in this environment. Please use your device's built-in screenshot feature if this fails.");
+                alert("Screenshot failed. Use your device's built-in screenshot instead.");
             });
         }
 
