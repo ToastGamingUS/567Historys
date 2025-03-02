@@ -1,36 +1,73 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>567Historys</title>
     <style>
+        :root {
+            --bg-color: #111;
+            --text-color: #eee;
+            --input-bg: #222;
+            --button-bg: #28a745;
+            --button-hover: #218838;
+        }
+        body.light-mode {
+            --bg-color: #fff;
+            --text-color: #111;
+            --input-bg: #f0f0f0;
+            --button-bg: #007bff;
+            --button-hover: #0056b3;
+        }
         body {
             font-family: Arial, sans-serif;
             text-align: center;
             padding: 20px;
-            background-color: black;
-            color: white;
+            background-color: var(--bg-color);
+            color: var(--text-color);
         }
         input, button {
             margin: 10px;
-            padding: 10px;
+            padding: 12px 20px;
             font-size: 16px;
+            border: none;
+            border-radius: 5px;
+        }
+        input {
+            background-color: var(--input-bg);
+            color: var(--text-color);
+        }
+        button {
+            background-color: var(--button-bg);
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: var(--button-hover);
         }
         iframe {
             width: 100%;
-            height: 80vh;
-            border: none;
+            height: 70vh;
+            border: 2px solid #555;
             margin-top: 20px;
+            background-color: #000;
         }
         img {
-            max-width: 100%;
-            height: auto;
-            margin-bottom: 20px;
+            max-width: 300px;
+            margin-bottom: 15px;
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        .controls {
+            margin-top: 15px;
         }
     </style>
 </head>
 <body>
-    <img src="https://raw.githubusercontent.com/ToastGamingUS/567Historys/refs/heads/main/Logo.png" alt="567Historys Logo">
+    <img src="https://raw.githubusercontent.com/ToastGamingUS/567Historys/refs/heads/main/LogoModern.png" alt="567Historys Logo">
     <h1>567Historys</h1>
     <label for="website">Website URL (e.g., roblox.com):</label>
     <input type="text" id="website" placeholder="example.com">
@@ -39,20 +76,109 @@
     <input type="date" id="date">
     <br>
     <button onclick="loadArchive()">View Site</button>
-    <iframe id="archiveFrame"></iframe><script>
-    function loadArchive() {
-        let website = document.getElementById("website").value.trim();
-        let date = document.getElementById("date").value.replace(/-/g, "");
-        
-        if (!website || !date) {
-            alert("Please enter a website and select a date.");
-            return;
-        }
-        
-        let archiveUrl = `https://web.archive.org/web/${date}000000/${"http://" + website}`;
-        document.getElementById("archiveFrame").src = archiveUrl;
-    }
-</script>
 
+    <div class="controls">
+        <button onclick="toggleFullScreen()">Toggle Full Screen</button>
+        <button onclick="takeScreenshot()">Take Screenshot</button>
+        <button onclick="contactOwner()">Contact Owner</button>
+        <button onclick="toggleTheme()">Toggle Theme</button>
+    </div>
+
+    <iframe id="archiveFrame"></iframe>
+
+    <div class="footer">
+        567Historys - Your daily website history looker
+    </div>
+
+    <script>
+        window.onload = () => {
+            const savedTheme = getCookie('theme');
+            if (savedTheme) {
+                document.body.classList.toggle('light-mode', savedTheme === 'light');
+            } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+                document.body.classList.add('light-mode');
+                setCookie('theme', 'light', 365);
+            }
+        };
+
+        async function loadArchive() {
+            let website = document.getElementById("website").value.trim();
+            let date = document.getElementById("date").value.replace(/-/g, "");
+            
+            if (!website || !date) {
+                alert("Please enter a website and select a date.");
+                return;
+            }
+            
+            let timestamp = date + "000000";
+            let checkUrl = `https://archive.org/wayback/available?url=http://${website}&timestamp=${timestamp}`;
+            
+            try {
+                let response = await fetch(checkUrl);
+                let data = await response.json();
+                if (!data.archived_snapshots || !data.archived_snapshots.closest) {
+                    alert("Website capture does not exist!");
+                    return;
+                }
+                
+                let archiveUrl = data.archived_snapshots.closest.url;
+                document.getElementById("archiveFrame").src = archiveUrl;
+            } catch (error) {
+                alert("The remote has not responded to the web server.");
+            }
+        }
+
+        function toggleFullScreen() {
+            let iframe = document.getElementById('archiveFrame');
+            if (!document.fullscreenElement) {
+                iframe.requestFullscreen().catch(console.error);
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function takeScreenshot() {
+            const iframe = document.getElementById('archiveFrame');
+            html2canvas(iframe.contentWindow.document.body).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'website_screenshot.png';
+                link.href = canvas.toDataURL();
+                link.click();
+            }).catch(() => {
+                alert("Screenshots may not work properly in this environment. Please use your device's built-in screenshot feature if this fails.");
+            });
+        }
+
+        function contactOwner() {
+            window.location.href = "mailto:melonsidedown@gmail.com";
+        }
+
+        function toggleTheme() {
+            const isLight = document.body.classList.toggle('light-mode');
+            setCookie('theme', isLight ? 'light' : 'dark', 365);
+        }
+
+        function setCookie(name, value, days) {
+            let expires = "";
+            if (days) {
+                const date = new Date();
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                expires = "; expires=" + date.toUTCString();
+            }
+            document.cookie = name + "=" + (value || "") + expires + "; path=/";
+        }
+
+        function getCookie(name) {
+            const nameEQ = name + "=";
+            const ca = document.cookie.split(';');
+            for (let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+            }
+            return null;
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </body>
 </html>
